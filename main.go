@@ -58,7 +58,7 @@ type PostgresAuroraInstanceArgs struct {
 	dbParameterGroup           rds.ParameterGroup
 }
 
-func provisionInstance(postgresAuroraInstanceArgs PostgresAuroraInstanceArgs) {
+func provisionInstance(ctx *pulumi.Context, postgresAuroraInstanceArgs *PostgresAuroraInstanceArgs) (clusterInstance *rds.ClusterInstance, err error) {
 	dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, "aurora-database"+"-namespace", &rds.ClusterInstanceArgs{
 		AutoMinorVersionUpgrade: pulumi.Bool(postgresAuroraInstanceArgs.autoMinorVersioningUpgrade),
 		ClusterIdentifier:       postgresAuroraInstanceArgs.dbCluster.ID(),
@@ -72,7 +72,7 @@ func provisionInstance(postgresAuroraInstanceArgs PostgresAuroraInstanceArgs) {
 		// Tags
 	})
 
-	_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
+	_, cpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
 		ActionsEnabled:   pulumi.Bool(true),
 		AlarmActions:     pulumi.Array{postgresAuroraInstanceArgs.snsTopic.ID()},
 		AlarmDescription: pulumi.String("CPU_Utilization"),
@@ -91,7 +91,7 @@ func provisionInstance(postgresAuroraInstanceArgs PostgresAuroraInstanceArgs) {
 	})
 
 	if cpuUtilizationAlarmErr != nil {
-		return cpuUtilizationAlarmErr
+		return nil, cpuUtilizationAlarmErr
 	}
 
 	_, maxUsedTxIDsAlarmErr := cloudwatch.NewMetricAlarm(ctx, "max-used-tx-alarm", &cloudwatch.MetricAlarmArgs{
@@ -113,10 +113,10 @@ func provisionInstance(postgresAuroraInstanceArgs PostgresAuroraInstanceArgs) {
 	})
 
 	if maxUsedTxIDsAlarmErr != nil {
-		return maxUsedTxIDsAlarmErr
+		return nil, maxUsedTxIDsAlarmErr
 	}
 
-	_, freeLocalStorageAlarm1Err := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm", &cloudwatch.MetricAlarmArgs{
+	_, freeLocalStorageAlarmErr := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm", &cloudwatch.MetricAlarmArgs{
 		ActionsEnabled:   pulumi.Bool(true),
 		AlarmActions:     pulumi.Array{postgresAuroraInstanceArgs.snsTopic.ID()},
 		AlarmDescription: pulumi.String("Free Local Storage"),
@@ -135,13 +135,14 @@ func provisionInstance(postgresAuroraInstanceArgs PostgresAuroraInstanceArgs) {
 	})
 
 	if freeLocalStorageAlarmErr != nil {
-		return freeLocalStorageAlarmErr
+		return nil, freeLocalStorageAlarmErr
 	}
 
 	if dbInstanceErr != nil {
-		return dbInstanceErr
+		return nil, dbInstanceErr
 	}
 
+	return dbInstance, nil
 }
 
 func main() {
@@ -453,21 +454,15 @@ func main() {
 		// 	dbCluster.KmsKeyId = *encryptionKeyArn
 		// }
 
-		dbInstance1, dbInstance1Err := rds.NewClusterInstance(ctx, "aurora-database-1", &rds.ClusterInstanceArgs{
-			// AllocatedStorage was not included in the quickstart guide but error was thrown saying: "allocated_storage": required field is not set"
-			// AllocatedStorage is ignored by Aurora, so we're setting it to 1 here as a dummy default.
-			//   See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-allocatedstorage
-			AutoMinorVersionUpgrade: pulumi.Bool(pDbAutoMinorVersionUpgrade),
-			// @fixme - DbClusterIdentifier not found
-			ClusterIdentifier:    dbCluster.ID(),
-			DbParameterGroupName: dbParameterGroup.ID(),
-			InstanceClass:        pulumi.String(pDbInstanceClass),
-			Engine:               pulumi.String(engine),
-			EngineVersion:        pulumi.String(pEngineVersion),
-			PubliclyAccessible:   pulumi.Bool(false),
-
-			// @fixme add tags
-			// Tags
+		dbInstance1, dbInstance1Err := provisionInstance(ctx, &PostgresAuroraInstanceArgs{
+			namespace:                  "1",
+			autoMinorVersioningUpgrade: pDbAutoMinorVersionUpgrade,
+			instanceClass:              pDbInstanceClass,
+			engine:                     engine,
+			engineVersion:              pEngineVersion,
+			snsTopic:                   *snsTopic,
+			dbCluster:                  *dbCluster,
+			dbParameterGroup:           *dbParameterGroup,
 		})
 
 		_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
