@@ -53,13 +53,13 @@ type PostgresAuroraInstanceArgs struct {
 	instanceClass              string
 	engine                     string
 	engineVersion              string
-	snsTopic                   sns.Topic
-	dbCluster                  rds.Cluster
-	dbParameterGroup           rds.ParameterGroup
+	snsTopic                   *sns.Topic
+	dbCluster                  *rds.Cluster
+	dbParameterGroup           *rds.ParameterGroup
 }
 
 func provisionInstance(ctx *pulumi.Context, postgresAuroraInstanceArgs *PostgresAuroraInstanceArgs) (clusterInstance *rds.ClusterInstance, err error) {
-	dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, "aurora-database"+"-namespace", &rds.ClusterInstanceArgs{
+	dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, "aurora-database-"+postgresAuroraInstanceArgs.namespace, &rds.ClusterInstanceArgs{
 		AutoMinorVersionUpgrade: pulumi.Bool(postgresAuroraInstanceArgs.autoMinorVersioningUpgrade),
 		ClusterIdentifier:       postgresAuroraInstanceArgs.dbCluster.ID(),
 		DbParameterGroupName:    postgresAuroraInstanceArgs.dbParameterGroup.ID(),
@@ -72,7 +72,7 @@ func provisionInstance(ctx *pulumi.Context, postgresAuroraInstanceArgs *Postgres
 		// Tags
 	})
 
-	_, cpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
+	_, cpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm-"+postgresAuroraInstanceArgs.namespace, &cloudwatch.MetricAlarmArgs{
 		ActionsEnabled:   pulumi.Bool(true),
 		AlarmActions:     pulumi.Array{postgresAuroraInstanceArgs.snsTopic.ID()},
 		AlarmDescription: pulumi.String("CPU_Utilization"),
@@ -94,7 +94,7 @@ func provisionInstance(ctx *pulumi.Context, postgresAuroraInstanceArgs *Postgres
 		return nil, cpuUtilizationAlarmErr
 	}
 
-	_, maxUsedTxIDsAlarmErr := cloudwatch.NewMetricAlarm(ctx, "max-used-tx-alarm", &cloudwatch.MetricAlarmArgs{
+	_, maxUsedTxIDsAlarmErr := cloudwatch.NewMetricAlarm(ctx, "max-used-tx-alarm-"+postgresAuroraInstanceArgs.namespace, &cloudwatch.MetricAlarmArgs{
 		ActionsEnabled:   pulumi.Bool(true),
 		AlarmActions:     pulumi.Array{postgresAuroraInstanceArgs.snsTopic.ID()},
 		AlarmDescription: pulumi.String("Maximum Used Transaction IDs"),
@@ -116,7 +116,7 @@ func provisionInstance(ctx *pulumi.Context, postgresAuroraInstanceArgs *Postgres
 		return nil, maxUsedTxIDsAlarmErr
 	}
 
-	_, freeLocalStorageAlarmErr := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm", &cloudwatch.MetricAlarmArgs{
+	_, freeLocalStorageAlarmErr := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm-"+postgresAuroraInstanceArgs.namespace, &cloudwatch.MetricAlarmArgs{
 		ActionsEnabled:   pulumi.Bool(true),
 		AlarmActions:     pulumi.Array{postgresAuroraInstanceArgs.snsTopic.ID()},
 		AlarmDescription: pulumi.String("Free Local Storage"),
@@ -460,78 +460,43 @@ func main() {
 			instanceClass:              pDbInstanceClass,
 			engine:                     engine,
 			engineVersion:              pEngineVersion,
-			snsTopic:                   *snsTopic,
-			dbCluster:                  *dbCluster,
-			dbParameterGroup:           *dbParameterGroup,
+			snsTopic:                   snsTopic,
+			dbCluster:                  dbCluster,
+			dbParameterGroup:           dbParameterGroup,
 		})
-
-		_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("CPU_Utilization"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance1.ID(),
-			},
-			MetricName:         pulumi.String("CPUUtilization"),
-			Statistic:          pulumi.String("Maximum"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(80),
-			Unit:               pulumi.String("Percent"),
-			ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
-		})
-
-		if cpuUtilization1AlarmErr != nil {
-			return cpuUtilization1AlarmErr
-		}
-
-		_, maxUsedTxIDsAlarm1Err := cloudwatch.NewMetricAlarm(ctx, "max-used-tx-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("Maximum Used Transaction IDs"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance1.ID(),
-			},
-			MetricName:         pulumi.String("MaximumUsedTransactionIDs"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(600000000),
-			Unit:               pulumi.String("Count"),
-			ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
-		})
-
-		if maxUsedTxIDsAlarm1Err != nil {
-			return maxUsedTxIDsAlarm1Err
-		}
-
-		_, freeLocalStorageAlarm1Err := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("Free Local Storage"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance1.ID(),
-			},
-			MetricName:         pulumi.String("FreeLocalStorage"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(5368709120),
-			Unit:               pulumi.String("Bytes"),
-			ComparisonOperator: pulumi.String("LessThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
-		})
-		if freeLocalStorageAlarm1Err != nil {
-			return freeLocalStorageAlarm1Err
-		}
 
 		if dbInstance1Err != nil {
 			return dbInstance1Err
+		}
+
+		dbInstance2, dbInstance2Err := provisionInstance(ctx, &PostgresAuroraInstanceArgs{
+			namespace:                  "2",
+			autoMinorVersioningUpgrade: pDbAutoMinorVersionUpgrade,
+			instanceClass:              pDbInstanceClass,
+			engine:                     engine,
+			engineVersion:              pEngineVersion,
+			snsTopic:                   snsTopic,
+			dbCluster:                  dbCluster,
+			dbParameterGroup:           dbParameterGroup,
+		})
+
+		if dbInstance2Err != nil {
+			return dbInstance2Err
+		}
+
+		dbInstance3, dbInstance3Err := provisionInstance(ctx, &PostgresAuroraInstanceArgs{
+			namespace:                  "3",
+			autoMinorVersioningUpgrade: pDbAutoMinorVersionUpgrade,
+			instanceClass:              pDbInstanceClass,
+			engine:                     engine,
+			engineVersion:              pEngineVersion,
+			snsTopic:                   snsTopic,
+			dbCluster:                  dbCluster,
+			dbParameterGroup:           dbParameterGroup,
+		})
+
+		if dbInstance3Err != nil {
+			return dbInstance3Err
 		}
 
 		if pEnableEventSubscription {
