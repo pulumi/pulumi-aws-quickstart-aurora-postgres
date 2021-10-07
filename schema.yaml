@@ -1,0 +1,143 @@
+---
+name: aws-quickstart-postgres
+resources:
+    aws-quickstart-postgres:index:Cluster:
+        isComponent: true
+        inputProperties:
+            availabilityZoneNames:
+                type: array
+                items:
+                    type: string
+                plain: true
+                description: |
+                    List of Availability Zone names to use to create the DB Cluster.
+            vpcID:
+                type: string
+                description: |
+                    The ID of your existing VPC (e.g., vpc-0343606e) where you
+                    want to deploy the Aurora database.
+            privateSubnetID1:
+                type: string
+                description: |
+                    The ID of the private subnet in Availability Zone 1 in your
+                    existing VPC (e.g., subnet-a0246dcd).
+            privateSubnetID2:
+                type: string
+                description: |
+                    The ID of the private subnet in Availability Zone 2 in your
+                    existing VPC (e.g., subnet-b58c3d67).
+            dbSecurityGroupID:
+                type: string
+                description: |
+                    The ID of the custom security group you want to use in your
+                    existing VPC (e.g., sg-7f16e910).
+            dbParameterGroupFamily:
+                type: string
+                plain: true
+                description: |
+                    The family of the DB parameter group (e.g. aurora-postgresql11).
+            dbBackupRetentionPeriod:
+                type: integer
+                plain: true
+                description: |
+                    The number of days to retain automatic database snapshots.
+                    To disable automatic backups, set this parameter to 0. Default is 35 days
+            dbEngineVersion:
+                type: string
+                plain: true
+                description: |
+                    The number of days to retain automatic database snapshots.
+                    To disable automatic backups, set this parameter to 0.
+            dbEncryptedEnabled:
+                type: boolean
+                default: true
+                description: |
+                    The number of days to retain automatic database snapshots.
+                    To disable automatic backups, set this parameter to 0.
+            dbPort:
+                type: number
+                plain: true
+                description: |
+                    The port that you want to access the database through. The DB
+                    instance will listen on this port for connections. This value
+                    must be in the range 1115-65535. Default is 5432
+            dbName:
+                type: string
+                plain: true
+                description: |
+                    The name of the Aurora DB to provision. This is an
+                    alphanumeric string of 5-64 characters.
+            dbMasterUsername:
+                type: string
+                plain: true
+                description: |
+                    The user name for the database administrator account. This is
+                    an alphanumeric string of 1-16 characters. The user name
+                    must start with an uppercase or lowercase letter (A-Z, a-z).
+            dbMasterPassword:
+                type: string
+                plain: true
+                secret: true
+                description: |
+                    The password for the database administrator account (8-64
+                    character string)
+            dbAutoMinorVersionUpgrade:
+                type: boolean
+                plain: true
+                default: false
+                description: |
+                    Set this parameter to true if you want to enable your DB
+                    instances to receive minor DB engine version upgrades
+                    automatically when upgrades become available.
+            dbInstanceClass:
+                type: string
+                plain: true
+                description: |
+                    The DB (compute and memory capacity) class for the database
+                    instances.
+            enableEventSubscription:
+                type: boolean
+                plain: true
+                default: true
+                description: |
+                    Set this parameter to `false` if you want to disable Amazon
+                    Aurora Cluster and Instance level event subscriptions. You
+                    might want to disable it if you are testing or running
+                    continuous integration (CI) processes.
+            snsNotificationEmail:
+                type: string
+                plain: true
+                description: |
+                    The email that is used to configure an SNS topic for sending
+                    CloudWatch alarms and Amazon RDS event notifications. This
+                    must be a valid email address. Required if enableEventSubscription is true.
+        requiredInputs:
+            - availabilityZoneNames
+            - vpcID
+            - privateSubnetID1
+            - privateSubnetID2
+            - dbParameterGroupFamily
+            - dbEngineVersion
+            - dbName
+            - dbMasterUsername
+            - dbMasterPassword
+            - dbInstanceClass
+language:
+    csharp:
+        packageReferences:
+            Pulumi: 3.*
+            Pulumi.Aws: 4.*
+        namespaces:
+            aws-quickstart-postgres: AwsQuickStartPostgres
+    go:
+        generateResourceContainerTypes: true
+        importBasePath: github.com/pulumi/pulumi-aws-quickstart-postgres/sdk/go/aws
+    nodejs:
+        dependencies:
+            "@pulumi/aws": "^4.5.1"
+        devDependencies:
+            typescript: "^3.7.0"
+    python:
+        requires:
+            pulumi: ">=3.0.0,<4.0.0"
+            pulumi-aws: ">=4.0.0,<5.0.0"
