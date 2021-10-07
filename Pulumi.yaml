@@ -1,3 +1,0 @@
-name: pulumi-aws-quickstart-postgres
-runtime: go
-description: A minimal AWS Go Pulumi program
