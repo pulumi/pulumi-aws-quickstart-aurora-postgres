@@ -26,6 +26,7 @@ class ClusterArgs:
                  db_auto_minor_version_upgrade: Optional[bool] = None,
                  db_backup_retention_period: Optional[int] = None,
                  db_encrypted_enabled: Optional[pulumi.Input[bool]] = None,
+                 db_num_db_cluster_instances: Optional[float] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
                  enable_event_subscription: Optional[bool] = None,
@@ -58,6 +59,7 @@ class ClusterArgs:
                To disable automatic backups, set this parameter to 0. Default is 35 days
         :param pulumi.Input[bool] db_encrypted_enabled: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0.
+        :param float db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
         :param float db_port: The port that you want to access the database through. The DB
                instance will listen on this port for connections. This value
                must be in the range 1115-65535. Default is 5432
@@ -91,6 +93,8 @@ class ClusterArgs:
             db_encrypted_enabled = True
         if db_encrypted_enabled is not None:
             pulumi.set(__self__, "db_encrypted_enabled", db_encrypted_enabled)
+        if db_num_db_cluster_instances is not None:
+            pulumi.set(__self__, "db_num_db_cluster_instances", db_num_db_cluster_instances)
         if db_port is not None:
             pulumi.set(__self__, "db_port", db_port)
         if db_security_group_id is not None:
@@ -272,6 +276,18 @@ class ClusterArgs:
         pulumi.set(self, "db_encrypted_enabled", value)
 
     @property
+    @pulumi.getter(name="dbNumDbClusterInstances")
+    def db_num_db_cluster_instances(self) -> Optional[float]:
+        """
+        The number of db instances to launch as part of the cluster. Defaults to 1.
+        """
+        return pulumi.get(self, "db_num_db_cluster_instances")
+
+    @db_num_db_cluster_instances.setter
+    def db_num_db_cluster_instances(self, value: Optional[float]):
+        pulumi.set(self, "db_num_db_cluster_instances", value)
+
+    @property
     @pulumi.getter(name="dbPort")
     def db_port(self) -> Optional[float]:
         """
@@ -342,6 +358,7 @@ class Cluster(pulumi.ComponentResource):
                  db_master_password: Optional[str] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
+                 db_num_db_cluster_instances: Optional[float] = None,
                  db_parameter_group_family: Optional[str] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
@@ -374,6 +391,7 @@ class Cluster(pulumi.ComponentResource):
                must start with an uppercase or lowercase letter (A-Z, a-z).
         :param str db_name: The name of the Aurora DB to provision. This is an
                alphanumeric string of 5-64 characters.
+        :param float db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
         :param str db_parameter_group_family: The family of the DB parameter group (e.g. aurora-postgresql11).
         :param float db_port: The port that you want to access the database through. The DB
                instance will listen on this port for connections. This value
@@ -426,6 +444,7 @@ class Cluster(pulumi.ComponentResource):
                  db_master_password: Optional[str] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
+                 db_num_db_cluster_instances: Optional[float] = None,
                  db_parameter_group_family: Optional[str] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
@@ -473,6 +492,7 @@ class Cluster(pulumi.ComponentResource):
             if db_name is None and not opts.urn:
                 raise TypeError("Missing required property 'db_name'")
             __props__.__dict__["db_name"] = db_name
+            __props__.__dict__["db_num_db_cluster_instances"] = db_num_db_cluster_instances
             if db_parameter_group_family is None and not opts.urn:
                 raise TypeError("Missing required property 'db_parameter_group_family'")
             __props__.__dict__["db_parameter_group_family"] = db_parameter_group_family
@@ -492,7 +512,7 @@ class Cluster(pulumi.ComponentResource):
                 raise TypeError("Missing required property 'vpc_id'")
             __props__.__dict__["vpc_id"] = vpc_id
         super(Cluster, __self__).__init__(
-            'aws-quickstart-postgres:index:Cluster',
+            'aws-quickstart-aurora-postgres:index:Cluster',
             resource_name,
             __props__,
             opts,

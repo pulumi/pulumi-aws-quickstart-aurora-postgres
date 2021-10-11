@@ -1,4 +1,4 @@
-module github.com/pulumi/pulumi-aws-quickstart-postgres/provider
+module github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/provider
 
 go 1.16
 

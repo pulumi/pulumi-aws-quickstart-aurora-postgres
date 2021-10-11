@@ -1,7 +1,7 @@
 ---
-name: aws-quickstart-postgres
+name: aws-quickstart-aurora-postgres
 resources:
-    aws-quickstart-postgres:index:Cluster:
+    aws-quickstart-aurora-postgres:index:Cluster:
         isComponent: true
         inputProperties:
             availabilityZoneNames:
@@ -111,6 +111,11 @@ resources:
                     The email that is used to configure an SNS topic for sending
                     CloudWatch alarms and Amazon RDS event notifications. This
                     must be a valid email address. Required if enableEventSubscription is true.
+            dbNumDbClusterInstances:
+                type: number
+                plain: true
+                description: |
+                    The number of db instances to launch as part of the cluster. Defaults to 1.
         requiredInputs:
             - availabilityZoneNames
             - vpcID
@@ -128,10 +133,10 @@ language:
             Pulumi: 3.*
             Pulumi.Aws: 4.*
         namespaces:
-            aws-quickstart-postgres: AwsQuickStartPostgres
+            aws-quickstart-aurora-postgres: AwsQuickStartAuroraPostgres
     go:
         generateResourceContainerTypes: true
-        importBasePath: github.com/pulumi/pulumi-aws-quickstart-postgres/sdk/go/aws
+        importBasePath: github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/sdk/go/aws
     nodejs:
         dependencies:
             "@pulumi/aws": "^4.5.1"

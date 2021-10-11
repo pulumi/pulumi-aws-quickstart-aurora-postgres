@@ -1,3 +1,3 @@
-// Package aws-quickstart-postgres exports types, functions, subpackages for provisioning aws-quickstart-postgres resources.
+// Package aws-quickstart-aurora-postgres exports types, functions, subpackages for provisioning aws-quickstart-aurora-postgres resources.
 //
 package aws
