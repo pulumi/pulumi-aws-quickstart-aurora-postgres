@@ -15,21 +15,21 @@ const _module = {
     version: utilities.getVersion(),
     construct: (name: string, type: string, urn: string): pulumi.Resource => {
         switch (type) {
-            case "aws-quickstart-postgres:index:Cluster":
+            case "aws-quickstart-aurora-postgres:index:Cluster":
                 return new Cluster(name, <any>undefined, { urn })
             default:
                 throw new Error(`unknown resource type ${type}`);
         }
     },
 };
-pulumi.runtime.registerResourceModule("aws-quickstart-postgres", "index", _module)
+pulumi.runtime.registerResourceModule("aws-quickstart-aurora-postgres", "index", _module)
 
 import { Provider } from "./provider";
 
-pulumi.runtime.registerResourcePackage("aws-quickstart-postgres", {
+pulumi.runtime.registerResourcePackage("aws-quickstart-aurora-postgres", {
     version: utilities.getVersion(),
     constructProvider: (name: string, type: string, urn: string): pulumi.ProviderResource => {
-        if (type !== "pulumi:providers:aws-quickstart-postgres") {
+        if (type !== "pulumi:providers:aws-quickstart-aurora-postgres") {
             throw new Error(`unknown provider type ${type}`);
         }
         return new Provider(name, <any>undefined, { urn });

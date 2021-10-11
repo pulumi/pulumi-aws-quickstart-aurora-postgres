@@ -17,8 +17,8 @@
 package main
 
 import (
-	"github.com/pulumi/pulumi-aws-quickstart-postgres/provider/pkg/provider"
-	"github.com/pulumi/pulumi-aws-quickstart-postgres/provider/pkg/version"
+	"github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/provider/pkg/provider"
+	"github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/provider/pkg/version"
 )
 
 var providerName = "aws-quickstart-postgres"

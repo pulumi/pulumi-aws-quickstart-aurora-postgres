@@ -24,7 +24,7 @@ import (
 func construct(ctx *pulumi.Context, typ, name string, inputs provider.ConstructInputs,
 	options pulumi.ResourceOption) (*provider.ConstructResult, error) {
 	switch typ {
-	case "aws-quickstart-postgres:index:Cluster":
+	case "aws-quickstart-aurora-postgres:index:Cluster":
 		return constructCluster(ctx, name, inputs, options)
 	default:
 		return nil, errors.Errorf("unknown resource type %s", typ)

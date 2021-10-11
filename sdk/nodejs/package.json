@@ -1,5 +1,5 @@
 {
-    "name": "@pulumi/aws-quickstart-postgres",
+    "name": "@pulumi/aws-quickstart-aurora-postgres",
     "version": "${VERSION}",
     "scripts": {
         "build": "tsc"

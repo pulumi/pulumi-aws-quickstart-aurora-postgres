@@ -11,11 +11,11 @@ _utilities.register(
     resource_modules="""
 [
  {
-  "pkg": "aws-quickstart-postgres",
+  "pkg": "aws-quickstart-aurora-postgres",
   "mod": "index",
-  "fqn": "pulumi_aws_quickstart_postgres",
+  "fqn": "pulumi_aws_quickstart_aurora_postgres",
   "classes": {
-   "aws-quickstart-postgres:index:Cluster": "Cluster"
+   "aws-quickstart-aurora-postgres:index:Cluster": "Cluster"
   }
  }
 ]
@@ -23,9 +23,9 @@ _utilities.register(
     resource_packages="""
 [
  {
-  "pkg": "aws-quickstart-postgres",
-  "token": "pulumi:providers:aws-quickstart-postgres",
-  "fqn": "pulumi_aws_quickstart_postgres",
+  "pkg": "aws-quickstart-aurora-postgres",
+  "token": "pulumi:providers:aws-quickstart-aurora-postgres",
+  "fqn": "pulumi_aws_quickstart_aurora_postgres",
   "class": "Provider"
  }
 ]

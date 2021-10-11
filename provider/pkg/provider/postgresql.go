@@ -21,7 +21,6 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/cloudwatch"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/kms"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/rds"
-	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/s3"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/sns"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -37,6 +36,7 @@ type ClusterArgs struct {
 	DbPort                    int32  `pulumi:"dbPort"`
 	DbEncryptionEnabled       bool   `pulumi:"dbEncryptedEnabled"`
 	DbParameterGroupFamily    string `pulumi:"dbParameterGroupFamily"`
+	NumDbClusterInstances     int    `pulumi:"numNumDbClusterInstances"`
 
 	EnableEventSubscription bool   `pulumi:"enableEventSubscription"`
 	SnsNotificationEmail    string `pulumi:"snsNotificationEmail"`
@@ -50,9 +50,6 @@ type ClusterArgs struct {
 
 type Cluster struct {
 	pulumi.ResourceState
-
-	SourceBucket      *s3.Bucket `pulumi:"sourceBucket"`
-	DestinationBucket *s3.Bucket `pulumi:"destinationBucket"`
 }
 
 func NewCluster(ctx *pulumi.Context,
@@ -62,7 +59,7 @@ func NewCluster(ctx *pulumi.Context,
 	}
 
 	component := &Cluster{}
-	err := ctx.RegisterComponentResource("aws-quickstart-postgres:index:Cluster", name, component, opts...)
+	err := ctx.RegisterComponentResource("aws-quickstart-aurora-postgres:index:Cluster", name, component, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,42 +69,47 @@ func NewCluster(ctx *pulumi.Context,
 		return nil, callerIdentityErr
 	}
 
-	keyPolicy, keyPolicyErr := json.Marshal(map[string]interface{}{
-		"Version": "2012-10-17",
-		"Id":      ctx.Stack(),
-		"Statement": []map[string]interface{}{
-			{
-				"Principal": map[string]interface{}{
-					"AWS": "arn:aws:iam::" + account.AccountId + ":root",
+	var key *kms.Key
+	if args.DbEncryptionEnabled {
+		keyPolicy, keyPolicyErr := json.Marshal(map[string]interface{}{
+			"Version": "2012-10-17",
+			"Id":      ctx.Stack(),
+			"Statement": []map[string]interface{}{
+				{
+					"Principal": map[string]interface{}{
+						"AWS": "arn:aws:iam::" + account.AccountId + ":root",
+					},
+					"Action": []string{
+						"kms:*",
+					},
+					"Effect":   "Allow",
+					"Resource": "*",
 				},
-				"Action": []string{
-					"kms:*",
-				},
-				"Effect":   "Allow",
-				"Resource": "*",
 			},
-		},
-	})
-	if keyPolicyErr != nil {
-		return nil, keyPolicyErr
-	}
+		})
+		if keyPolicyErr != nil {
+			return nil, keyPolicyErr
+		}
 
-	kmsKey, kmsKeyErr := kms.NewKey(ctx, fmt.Sprintf("%s-database-kms-key", name), &kms.KeyArgs{
-		Policy: pulumi.String(keyPolicy),
-		Tags: pulumi.StringMap{
-			"Name": pulumi.String("database-kms-key"),
-		},
-	})
-	if kmsKeyErr != nil {
-		return nil, kmsKeyErr
-	}
+		kmsKey, kmsKeyErr := kms.NewKey(ctx, fmt.Sprintf("%s-database-kms-key", name), &kms.KeyArgs{
+			Policy: pulumi.String(keyPolicy),
+			Tags: pulumi.StringMap{
+				"Name": pulumi.String("database-kms-key"),
+			},
+		})
+		if kmsKeyErr != nil {
+			return nil, kmsKeyErr
+		}
 
-	_, kmsKeyAliasErr := kms.NewAlias(ctx, fmt.Sprintf("%s-database-kms-key-alias", name), &kms.AliasArgs{
-		Name:        pulumi.String(fmt.Sprintf("alias/%s", name)),
-		TargetKeyId: kmsKey.ID(),
-	})
-	if kmsKeyAliasErr != nil {
-		return nil, kmsKeyAliasErr
+		_, kmsKeyAliasErr := kms.NewAlias(ctx, fmt.Sprintf("%s-database-kms-key-alias", name), &kms.AliasArgs{
+			Name:        pulumi.String(fmt.Sprintf("alias/%s", name)),
+			TargetKeyId: kmsKey.ID(),
+		})
+		if kmsKeyAliasErr != nil {
+			return nil, kmsKeyAliasErr
+		}
+
+		key = kmsKey
 	}
 
 	subnetGroup, subnetGroupErr := rds.NewSubnetGroup(ctx, fmt.Sprintf("%s-db-subnet-group", name), &rds.SubnetGroupArgs{
@@ -175,12 +177,14 @@ func NewCluster(ctx *pulumi.Context,
 		DatabaseName:                pulumi.String(args.DatabaseName),
 		Engine:                      pulumi.String("aurora-postgresql"),
 		EngineVersion:               pulumi.String(args.DbEngineVersion),
-		KmsKeyId:                    kmsKey.Arn,
 		MasterUsername:              pulumi.String(args.DBMasterUsername),
 		MasterPassword:              pulumi.String(args.DBMasterUserPassword),
 		Port:                        pulumi.Int(port),
 		StorageEncrypted:            pulumi.Bool(args.DbEncryptionEnabled),
 		DbSubnetGroupName:           subnetGroup.Name,
+	}
+	if args.DbEncryptionEnabled {
+		clusterArgs.KmsKeyId = key.Arn
 	}
 	if args.DbSecurityGroupID != nil {
 		clusterArgs.VpcSecurityGroupIds = pulumi.StringArray{
@@ -192,20 +196,12 @@ func NewCluster(ctx *pulumi.Context,
 		return nil, clusterErr
 	}
 
-	dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, fmt.Sprintf("%s-aurora-database", name), &rds.ClusterInstanceArgs{
-		AutoMinorVersionUpgrade: pulumi.Bool(args.DBAutoMinorVersionUpgrade),
-		ClusterIdentifier:       dbCluster.ID(),
-		DbParameterGroupName:    dbParameterGroup.ID(),
-		InstanceClass:           pulumi.String(args.DBInstanceClass),
-		Engine:                  pulumi.String("aurora-postgresql"),
-		EngineVersion:           pulumi.String(args.DbEngineVersion),
-		PubliclyAccessible:      pulumi.Bool(false),
-		DbSubnetGroupName:       subnetGroup.Name,
-	})
-	if dbInstanceErr != nil {
-		return nil, dbInstanceErr
+	instanceCount := args.NumDbClusterInstances
+	if instanceCount == 0 {
+		instanceCount = 1
 	}
 
+	var topic *sns.Topic
 	if args.EnableEventSubscription {
 		snsTopic, snsTopicErr := sns.NewTopic(ctx, "sns-topic", &sns.TopicArgs{
 			DisplayName: pulumi.String(args.DatabaseName),
@@ -223,115 +219,129 @@ func NewCluster(ctx *pulumi.Context,
 			return nil, snsTopicSubscriptionErr
 		}
 
-		_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, "cpu-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("CPU_Utilization"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance.ID(),
-			},
-			MetricName:         pulumi.String("CPUUtilization"),
-			Statistic:          pulumi.String("Maximum"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(80),
-			Unit:               pulumi.String("Percent"),
-			ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
+		topic = snsTopic
+	}
+
+	for i := 0; i < instanceCount; i++ {
+		dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, fmt.Sprintf("%s-aurora-database-%d", name, i), &rds.ClusterInstanceArgs{
+			AutoMinorVersionUpgrade: pulumi.Bool(args.DBAutoMinorVersionUpgrade),
+			ClusterIdentifier:       dbCluster.ID(),
+			DbParameterGroupName:    dbParameterGroup.ID(),
+			InstanceClass:           pulumi.String(args.DBInstanceClass),
+			Engine:                  pulumi.String("aurora-postgresql"),
+			EngineVersion:           pulumi.String(args.DbEngineVersion),
+			PubliclyAccessible:      pulumi.Bool(false),
+			DbSubnetGroupName:       subnetGroup.Name,
 		})
-		if cpuUtilization1AlarmErr != nil {
-			return nil, cpuUtilization1AlarmErr
+		if dbInstanceErr != nil {
+			return nil, dbInstanceErr
 		}
 
-		_, maxUsedTxIDsAlarm1Err := cloudwatch.NewMetricAlarm(ctx, "max-used-tx-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("Maximum Used Transaction IDs"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance.ID(),
-			},
-			MetricName:         pulumi.String("MaximumUsedTransactionIDs"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(600000000),
-			Unit:               pulumi.String("Count"),
-			ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
-		})
-		if maxUsedTxIDsAlarm1Err != nil {
-			return nil, maxUsedTxIDsAlarm1Err
-		}
+		if args.EnableEventSubscription {
+			_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-cpu-alarm-%d", name, i), &cloudwatch.MetricAlarmArgs{
+				ActionsEnabled:   pulumi.Bool(true),
+				AlarmActions:     pulumi.Array{topic.ID()},
+				AlarmDescription: pulumi.String("CPU_Utilization"),
+				Dimensions: pulumi.StringMap{
+					"DBInstanceIdentifier": dbInstance.ID(),
+				},
+				MetricName:         pulumi.String("CPUUtilization"),
+				Statistic:          pulumi.String("Maximum"),
+				Namespace:          pulumi.String("AWS/RDS"),
+				Threshold:          pulumi.Float64Ptr(80),
+				Unit:               pulumi.String("Percent"),
+				ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
+				Period:             pulumi.Int(60),
+				EvaluationPeriods:  pulumi.Int(5),
+				TreatMissingData:   pulumi.String("notBreaching"),
+			})
+			if cpuUtilization1AlarmErr != nil {
+				return nil, cpuUtilization1AlarmErr
+			}
 
-		_, freeLocalStorageAlarm1Err := cloudwatch.NewMetricAlarm(ctx, "free-local-storage-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopic.ID()},
-			AlarmDescription: pulumi.String("Free Local Storage"),
-			Dimensions: pulumi.StringMap{
-				"DBInstanceIdentifier": dbInstance.ID(),
-			},
-			MetricName:         pulumi.String("FreeLocalStorage"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/RDS"),
-			Threshold:          pulumi.Float64Ptr(5368709120),
-			Unit:               pulumi.String("Bytes"),
-			ComparisonOperator: pulumi.String("LessThanOrEqualToThreshold"),
-			Period:             pulumi.Int(60),
-			EvaluationPeriods:  pulumi.Int(5),
-			TreatMissingData:   pulumi.String("notBreaching"),
-		})
-		if freeLocalStorageAlarm1Err != nil {
-			return nil, freeLocalStorageAlarm1Err
-		}
+			_, maxUsedTxIDsAlarm1Err := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-max-used-tx-alarm-%d", name, i), &cloudwatch.MetricAlarmArgs{
+				ActionsEnabled:   pulumi.Bool(true),
+				AlarmActions:     pulumi.Array{topic.ID()},
+				AlarmDescription: pulumi.String("Maximum Used Transaction IDs"),
+				Dimensions: pulumi.StringMap{
+					"DBInstanceIdentifier": dbInstance.ID(),
+				},
+				MetricName:         pulumi.String("MaximumUsedTransactionIDs"),
+				Statistic:          pulumi.String("Average"),
+				Namespace:          pulumi.String("AWS/RDS"),
+				Threshold:          pulumi.Float64Ptr(600000000),
+				Unit:               pulumi.String("Count"),
+				ComparisonOperator: pulumi.String("GreaterThanOrEqualToThreshold"),
+				Period:             pulumi.Int(60),
+				EvaluationPeriods:  pulumi.Int(5),
+				TreatMissingData:   pulumi.String("notBreaching"),
+			})
+			if maxUsedTxIDsAlarm1Err != nil {
+				return nil, maxUsedTxIDsAlarm1Err
+			}
 
-		_, clusterEventSubscriptionErr := rds.NewEventSubscription(ctx, "cluster-event-subscription", &rds.EventSubscriptionArgs{
-			SnsTopic:        snsTopic.ID(),
-			SourceType:      pulumi.String("db-cluster"),
-			EventCategories: pulumi.ToStringArray([]string{"failover", "failure", "notification"}),
-			SourceIds: pulumi.StringArray{
-				dbCluster.ID(),
-			},
-		})
-		if clusterEventSubscriptionErr != nil {
-			return nil, clusterEventSubscriptionErr
-		}
+			_, freeLocalStorageAlarm1Err := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-free-local-storage-alarm-%d", name, i), &cloudwatch.MetricAlarmArgs{
+				ActionsEnabled:   pulumi.Bool(true),
+				AlarmActions:     pulumi.Array{topic.ID()},
+				AlarmDescription: pulumi.String("Free Local Storage"),
+				Dimensions: pulumi.StringMap{
+					"DBInstanceIdentifier": dbInstance.ID(),
+				},
+				MetricName:         pulumi.String("FreeLocalStorage"),
+				Statistic:          pulumi.String("Average"),
+				Namespace:          pulumi.String("AWS/RDS"),
+				Threshold:          pulumi.Float64Ptr(5368709120),
+				Unit:               pulumi.String("Bytes"),
+				ComparisonOperator: pulumi.String("LessThanOrEqualToThreshold"),
+				Period:             pulumi.Int(60),
+				EvaluationPeriods:  pulumi.Int(5),
+				TreatMissingData:   pulumi.String("notBreaching"),
+			})
+			if freeLocalStorageAlarm1Err != nil {
+				return nil, freeLocalStorageAlarm1Err
+			}
 
-		_, instanceEventSubscriptionErr := rds.NewEventSubscription(ctx, "instance-event-subscription", &rds.EventSubscriptionArgs{
-			SnsTopic:        snsTopic.ID(),
-			SourceType:      pulumi.String("db-instance"),
-			EventCategories: pulumi.ToStringArray([]string{"availability", "configuration change", "deletion", "failover", "failure", "maintenance", "notification", "recovery"}),
-			SourceIds: pulumi.StringArray{
-				dbInstance.ID(),
-			},
-		})
-		if instanceEventSubscriptionErr != nil {
-			return nil, instanceEventSubscriptionErr
-		}
+			_, clusterEventSubscriptionErr := rds.NewEventSubscription(ctx, fmt.Sprintf("%s-cluster-event-subscription-%d", name, i), &rds.EventSubscriptionArgs{
+				SnsTopic:        topic.ID(),
+				SourceType:      pulumi.String("db-cluster"),
+				EventCategories: pulumi.ToStringArray([]string{"failover", "failure", "notification"}),
+				SourceIds: pulumi.StringArray{
+					dbCluster.ID(),
+				},
+			})
+			if clusterEventSubscriptionErr != nil {
+				return nil, clusterEventSubscriptionErr
+			}
 
-		_, dbParameterGroupEventSubscriptionErr := rds.NewEventSubscription(ctx, "parameter-group-event-subscription", &rds.EventSubscriptionArgs{
-			SnsTopic:        snsTopic.ID(),
-			SourceType:      pulumi.String("db-parameter-group"),
-			EventCategories: pulumi.ToStringArray([]string{"configuration change"}),
-			SourceIds: pulumi.StringArray{
-				dbParameterGroup.ID(),
-			},
-		})
-		if dbParameterGroupEventSubscriptionErr != nil {
-			return nil, dbParameterGroupEventSubscriptionErr
+			_, instanceEventSubscriptionErr := rds.NewEventSubscription(ctx, fmt.Sprintf("%s-instance-event-subscription-%d", name, i), &rds.EventSubscriptionArgs{
+				SnsTopic:        topic.ID(),
+				SourceType:      pulumi.String("db-instance"),
+				EventCategories: pulumi.ToStringArray([]string{"availability", "configuration change", "deletion", "failover", "failure", "maintenance", "notification", "recovery"}),
+				SourceIds: pulumi.StringArray{
+					dbInstance.ID(),
+				},
+			})
+			if instanceEventSubscriptionErr != nil {
+				return nil, instanceEventSubscriptionErr
+			}
+
+			_, dbParameterGroupEventSubscriptionErr := rds.NewEventSubscription(ctx, fmt.Sprintf("%s-parameter-group-event-subscription-%d", name, i), &rds.EventSubscriptionArgs{
+				SnsTopic:        topic.ID(),
+				SourceType:      pulumi.String("db-parameter-group"),
+				EventCategories: pulumi.ToStringArray([]string{"configuration change"}),
+				SourceIds: pulumi.StringArray{
+					dbParameterGroup.ID(),
+				},
+			})
+			if dbParameterGroupEventSubscriptionErr != nil {
+				return nil, dbParameterGroupEventSubscriptionErr
+			}
 		}
 	}
 
-	//component.DestinationBucket = dst
-	//component.SourceBucket = src
-	//
-	//if err := ctx.RegisterResourceOutputs(component, pulumi.Map{
-	//	"destinationBucket": dst,
-	//	"sourceBucket":      src,
-	//}); err != nil {
-	//	return nil, err
-	//}
+	if err := ctx.RegisterResourceOutputs(component, pulumi.Map{}); err != nil {
+		return nil, err
+	}
 
 	return component, nil
 }

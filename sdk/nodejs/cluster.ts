@@ -6,7 +6,7 @@ import * as utilities from "./utilities";
 
 export class Cluster extends pulumi.ComponentResource {
     /** @internal */
-    public static readonly __pulumiType = 'aws-quickstart-postgres:index:Cluster';
+    public static readonly __pulumiType = 'aws-quickstart-aurora-postgres:index:Cluster';
 
     /**
      * Returns true if the given object is an instance of Cluster.  This is designed to work even
@@ -70,6 +70,7 @@ export class Cluster extends pulumi.ComponentResource {
             inputs["dbMasterPassword"] = args?.dbMasterPassword ? pulumi.secret(args.dbMasterPassword) : undefined;
             inputs["dbMasterUsername"] = args ? args.dbMasterUsername : undefined;
             inputs["dbName"] = args ? args.dbName : undefined;
+            inputs["dbNumDbClusterInstances"] = args ? args.dbNumDbClusterInstances : undefined;
             inputs["dbParameterGroupFamily"] = args ? args.dbParameterGroupFamily : undefined;
             inputs["dbPort"] = args ? args.dbPort : undefined;
             inputs["dbSecurityGroupID"] = args ? args.dbSecurityGroupID : undefined;
@@ -137,6 +138,10 @@ export interface ClusterArgs {
      * alphanumeric string of 5-64 characters.
      */
     dbName: string;
+    /**
+     * The number of db instances to launch as part of the cluster. Defaults to 1.
+     */
+    dbNumDbClusterInstances?: number;
     /**
      * The family of the DB parameter group (e.g. aurora-postgresql11).
      */

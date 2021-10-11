@@ -12,7 +12,7 @@ blobs:
     provider: s3
     region: us-west-2
 builds:
-  - binary: pulumi-resource-aws-s3-replicated-bucket
+  - binary: pulumi-resource-aws-quickstart-aurora-postgres
     dir: provider
     env:
       - CGO_ENABLED=0
@@ -23,8 +23,8 @@ builds:
       - windows
       - linux
     ldflags:
-      - -X github.com/pulumi/pulumi-aws-s3-replicated-bucket/provider/pkg/version.Version={{.Tag }}
-    main: ./cmd/pulumi-resource-aws-s3-replicated-bucket/
+      - -X github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/provider/pkg/version.Version={{.Tag }}
+    main: ./cmd/pulumi-resource-aws-quickstart-aurora-postgres/
 changelog:
   skip: true
 release:

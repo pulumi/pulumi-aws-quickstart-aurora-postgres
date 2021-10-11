@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using Pulumi;
 
-namespace Pulumi.AwsQuickStartPostgres
+namespace Pulumi.AwsQuickStartAuroraPostgres
 {
     static class Utilities
     {
@@ -66,7 +66,7 @@ namespace Pulumi.AwsQuickStartPostgres
         static Utilities()
         {
             var assembly = typeof(Utilities).GetTypeInfo().Assembly;
-            using var stream = assembly.GetManifestResourceStream("Pulumi.AwsQuickStartPostgres.version.txt");
+            using var stream = assembly.GetManifestResourceStream("Pulumi.AwsQuickStartAuroraPostgres.version.txt");
             using var reader = new StreamReader(stream ?? throw new NotSupportedException("Missing embedded version.txt file"));
             version = reader.ReadToEnd().Trim();
             var parts = version.Split("\n");
@@ -78,9 +78,9 @@ namespace Pulumi.AwsQuickStartPostgres
         }
     }
 
-    internal sealed class AwsQuickStartPostgresResourceTypeAttribute : Pulumi.ResourceTypeAttribute
+    internal sealed class AwsQuickStartAuroraPostgresResourceTypeAttribute : Pulumi.ResourceTypeAttribute
     {
-        public AwsQuickStartPostgresResourceTypeAttribute(string type) : base(type, Utilities.Version)
+        public AwsQuickStartAuroraPostgresResourceTypeAttribute(string type) : base(type, Utilities.Version)
         {
         }
     }

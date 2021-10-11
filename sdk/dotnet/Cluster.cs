@@ -7,9 +7,9 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Pulumi.Serialization;
 
-namespace Pulumi.AwsQuickStartPostgres
+namespace Pulumi.AwsQuickStartAuroraPostgres
 {
-    [AwsQuickStartPostgresResourceType("aws-quickstart-postgres:index:Cluster")]
+    [AwsQuickStartAuroraPostgresResourceType("aws-quickstart-aurora-postgres:index:Cluster")]
     public partial class Cluster : Pulumi.ComponentResource
     {
         /// <summary>
@@ -20,7 +20,7 @@ namespace Pulumi.AwsQuickStartPostgres
         /// <param name="args">The arguments used to populate this resource's properties</param>
         /// <param name="options">A bag of options that control this resource's behavior</param>
         public Cluster(string name, ClusterArgs args, ComponentResourceOptions? options = null)
-            : base("aws-quickstart-postgres:index:Cluster", name, args ?? new ClusterArgs(), MakeResourceOptions(options, ""), remote: true)
+            : base("aws-quickstart-aurora-postgres:index:Cluster", name, args ?? new ClusterArgs(), MakeResourceOptions(options, ""), remote: true)
         {
         }
 
@@ -118,6 +118,12 @@ namespace Pulumi.AwsQuickStartPostgres
         /// </summary>
         [Input("dbName", required: true)]
         public string DbName { get; set; } = null!;
+
+        /// <summary>
+        /// The number of db instances to launch as part of the cluster. Defaults to 1.
+        /// </summary>
+        [Input("dbNumDbClusterInstances")]
+        public double? DbNumDbClusterInstances { get; set; }
 
         /// <summary>
         /// The family of the DB parameter group (e.g. aurora-postgresql11).

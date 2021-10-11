@@ -1,6 +1,6 @@
 VERSION         := $(shell pulumictl get version)
 
-PACK            := aws-quickstart-postgres
+PACK            := aws-quickstart-aurora-postgres
 PROJECT         := github.com/pulumi/pulumi-${PACK}
 
 PROVIDER        := pulumi-resource-${PACK}

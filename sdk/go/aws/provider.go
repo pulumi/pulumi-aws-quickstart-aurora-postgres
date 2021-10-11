@@ -22,7 +22,7 @@ func NewProvider(ctx *pulumi.Context,
 	}
 
 	var resource Provider
-	err := ctx.RegisterResource("pulumi:providers:aws-quickstart-postgres", name, args, &resource, opts...)
+	err := ctx.RegisterResource("pulumi:providers:aws-quickstart-aurora-postgres", name, args, &resource, opts...)
 	if err != nil {
 		return nil, err
 	}

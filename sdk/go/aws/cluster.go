@@ -44,7 +44,7 @@ func NewCluster(ctx *pulumi.Context,
 		args.EnableEventSubscription = *bool(true)
 	}
 	var resource Cluster
-	err := ctx.RegisterRemoteComponentResource("aws-quickstart-postgres:index:Cluster", name, args, &resource, opts...)
+	err := ctx.RegisterRemoteComponentResource("aws-quickstart-aurora-postgres:index:Cluster", name, args, &resource, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +80,8 @@ type clusterArgs struct {
 	// The name of the Aurora DB to provision. This is an
 	// alphanumeric string of 5-64 characters.
 	DbName string `pulumi:"dbName"`
+	// The number of db instances to launch as part of the cluster. Defaults to 1.
+	DbNumDbClusterInstances *float64 `pulumi:"dbNumDbClusterInstances"`
 	// The family of the DB parameter group (e.g. aurora-postgresql11).
 	DbParameterGroupFamily string `pulumi:"dbParameterGroupFamily"`
 	// The port that you want to access the database through. The DB
@@ -139,6 +141,8 @@ type ClusterArgs struct {
 	// The name of the Aurora DB to provision. This is an
 	// alphanumeric string of 5-64 characters.
 	DbName string
+	// The number of db instances to launch as part of the cluster. Defaults to 1.
+	DbNumDbClusterInstances *float64
 	// The family of the DB parameter group (e.g. aurora-postgresql11).
 	DbParameterGroupFamily string
 	// The port that you want to access the database through. The DB
