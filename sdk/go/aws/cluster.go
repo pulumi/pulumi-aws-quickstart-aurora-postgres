@@ -25,6 +25,9 @@ func NewCluster(ctx *pulumi.Context,
 	if args.AvailabilityZoneNames == nil {
 		return nil, errors.New("invalid value for required argument 'AvailabilityZoneNames'")
 	}
+	if args.DbMasterPassword == nil {
+		return nil, errors.New("invalid value for required argument 'DbMasterPassword'")
+	}
 	if args.PrivateSubnetID1 == nil {
 		return nil, errors.New("invalid value for required argument 'PrivateSubnetID1'")
 	}
@@ -33,15 +36,6 @@ func NewCluster(ctx *pulumi.Context,
 	}
 	if args.VpcID == nil {
 		return nil, errors.New("invalid value for required argument 'VpcID'")
-	}
-	if args.DbAutoMinorVersionUpgrade == nil {
-		args.DbAutoMinorVersionUpgrade = *bool(false)
-	}
-	if args.DbEncryptedEnabled == nil {
-		args.DbEncryptedEnabled = pulumi.BoolPtr(true)
-	}
-	if args.EnableEventSubscription == nil {
-		args.EnableEventSubscription = *bool(true)
 	}
 	var resource Cluster
 	err := ctx.RegisterRemoteComponentResource("aws-quickstart-aurora-postgres:index:Cluster", name, args, &resource, opts...)
@@ -81,7 +75,7 @@ type clusterArgs struct {
 	// alphanumeric string of 5-64 characters.
 	DbName string `pulumi:"dbName"`
 	// The number of db instances to launch as part of the cluster. Defaults to 1.
-	DbNumDbClusterInstances *float64 `pulumi:"dbNumDbClusterInstances"`
+	DbNumDbClusterInstances *int `pulumi:"dbNumDbClusterInstances"`
 	// The family of the DB parameter group (e.g. aurora-postgresql11).
 	DbParameterGroupFamily string `pulumi:"dbParameterGroupFamily"`
 	// The port that you want to access the database through. The DB
@@ -124,7 +118,7 @@ type ClusterArgs struct {
 	DbBackupRetentionPeriod *int
 	// The number of days to retain automatic database snapshots.
 	// To disable automatic backups, set this parameter to 0.
-	DbEncryptedEnabled pulumi.BoolPtrInput
+	DbEncryptedEnabled *bool
 	// The number of days to retain automatic database snapshots.
 	// To disable automatic backups, set this parameter to 0.
 	DbEngineVersion string
@@ -133,7 +127,7 @@ type ClusterArgs struct {
 	DbInstanceClass string
 	// The password for the database administrator account (8-64
 	// character string)
-	DbMasterPassword string
+	DbMasterPassword pulumi.StringInput
 	// The user name for the database administrator account. This is
 	// an alphanumeric string of 1-16 characters. The user name
 	// must start with an uppercase or lowercase letter (A-Z, a-z).
@@ -142,7 +136,7 @@ type ClusterArgs struct {
 	// alphanumeric string of 5-64 characters.
 	DbName string
 	// The number of db instances to launch as part of the cluster. Defaults to 1.
-	DbNumDbClusterInstances *float64
+	DbNumDbClusterInstances *int
 	// The family of the DB parameter group (e.g. aurora-postgresql11).
 	DbParameterGroupFamily string
 	// The port that you want to access the database through. The DB

@@ -32,8 +32,8 @@ type ClusterArgs struct {
 	DbEngineVersion           string `pulumi:"dbEngineVersion"`
 	DBInstanceClass           string `pulumi:"dbInstanceClass"`
 	DBMasterUsername          string `pulumi:"dbMasterUsername"`
-	DBMasterUserPassword      string `pulumi:"dbMasterUserPassword"`
-	DbPort                    int32  `pulumi:"dbPort"`
+	DBMasterPassword          string `pulumi:"dbMasterPassword"`
+	DbPort                    int    `pulumi:"dbPort"`
 	DbEncryptionEnabled       *bool  `pulumi:"dbEncryptedEnabled"`
 	DbParameterGroupFamily    string `pulumi:"dbParameterGroupFamily"`
 	NumDbClusterInstances     int    `pulumi:"numNumDbClusterInstances"`
@@ -69,8 +69,18 @@ func NewCluster(ctx *pulumi.Context,
 		return nil, callerIdentityErr
 	}
 
+	enableEventSubscription := true
+	if args.EnableEventSubscription != nil {
+		enableEventSubscription = *args.EnableEventSubscription
+	}
+
+	dbEncryptionEnabled := true
+	if args.DbEncryptionEnabled != nil {
+		dbEncryptionEnabled = *args.DbEncryptionEnabled
+	}
+
 	var key *kms.Key
-	if args.DbEncryptionEnabled != nil && *args.DbEncryptionEnabled {
+	if dbEncryptionEnabled {
 		keyPolicy, keyPolicyErr := json.Marshal(map[string]interface{}{
 			"Version": "2012-10-17",
 			"Id":      ctx.Stack(),
@@ -178,12 +188,12 @@ func NewCluster(ctx *pulumi.Context,
 		Engine:                      pulumi.String("aurora-postgresql"),
 		EngineVersion:               pulumi.String(args.DbEngineVersion),
 		MasterUsername:              pulumi.String(args.DBMasterUsername),
-		MasterPassword:              pulumi.String(args.DBMasterUserPassword),
+		MasterPassword:              pulumi.String(args.DBMasterPassword),
 		Port:                        pulumi.Int(port),
-		StorageEncrypted:            pulumi.Bool(*args.DbEncryptionEnabled),
+		StorageEncrypted:            pulumi.Bool(dbEncryptionEnabled),
 		DbSubnetGroupName:           subnetGroup.Name,
 	}
-	if args.DbEncryptionEnabled != nil && *args.DbEncryptionEnabled {
+	if dbEncryptionEnabled {
 		clusterArgs.KmsKeyId = key.Arn
 	}
 	if args.DbSecurityGroupID != nil {
@@ -223,8 +233,13 @@ func NewCluster(ctx *pulumi.Context,
 	}
 
 	for i := 0; i < instanceCount; i++ {
+		dbAutoMinorVersionUpgrade := false
+		if args.DBAutoMinorVersionUpgrade != nil {
+			dbAutoMinorVersionUpgrade = *args.DBAutoMinorVersionUpgrade
+		}
+
 		dbInstance, dbInstanceErr := rds.NewClusterInstance(ctx, fmt.Sprintf("%s-aurora-database-%d", name, i), &rds.ClusterInstanceArgs{
-			AutoMinorVersionUpgrade: pulumi.Bool(*args.DBAutoMinorVersionUpgrade),
+			AutoMinorVersionUpgrade: pulumi.Bool(dbAutoMinorVersionUpgrade),
 			ClusterIdentifier:       dbCluster.ID(),
 			DbParameterGroupName:    dbParameterGroup.ID(),
 			InstanceClass:           pulumi.String(args.DBInstanceClass),
@@ -237,7 +252,7 @@ func NewCluster(ctx *pulumi.Context,
 			return nil, dbInstanceErr
 		}
 
-		if args.EnableEventSubscription != nil && *args.EnableEventSubscription {
+		if enableEventSubscription {
 			_, cpuUtilization1AlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-cpu-alarm-%d", name, i), &cloudwatch.MetricAlarmArgs{
 				ActionsEnabled:   pulumi.Bool(true),
 				AlarmActions:     pulumi.Array{topic.ID()},

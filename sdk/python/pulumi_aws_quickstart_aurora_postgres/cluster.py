@@ -16,7 +16,7 @@ class ClusterArgs:
                  availability_zone_names: Sequence[pulumi.Input[str]],
                  db_engine_version: str,
                  db_instance_class: str,
-                 db_master_password: str,
+                 db_master_password: pulumi.Input[str],
                  db_master_username: str,
                  db_name: str,
                  db_parameter_group_family: str,
@@ -25,8 +25,8 @@ class ClusterArgs:
                  vpc_id: pulumi.Input[str],
                  db_auto_minor_version_upgrade: Optional[bool] = None,
                  db_backup_retention_period: Optional[int] = None,
-                 db_encrypted_enabled: Optional[pulumi.Input[bool]] = None,
-                 db_num_db_cluster_instances: Optional[float] = None,
+                 db_encrypted_enabled: Optional[bool] = None,
+                 db_num_db_cluster_instances: Optional[int] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
                  enable_event_subscription: Optional[bool] = None,
@@ -38,7 +38,7 @@ class ClusterArgs:
                To disable automatic backups, set this parameter to 0.
         :param str db_instance_class: The DB (compute and memory capacity) class for the database
                instances.
-        :param str db_master_password: The password for the database administrator account (8-64
+        :param pulumi.Input[str] db_master_password: The password for the database administrator account (8-64
                character string)
         :param str db_master_username: The user name for the database administrator account. This is
                an alphanumeric string of 1-16 characters. The user name
@@ -57,9 +57,9 @@ class ClusterArgs:
                automatically when upgrades become available.
         :param int db_backup_retention_period: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0. Default is 35 days
-        :param pulumi.Input[bool] db_encrypted_enabled: The number of days to retain automatic database snapshots.
+        :param bool db_encrypted_enabled: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0.
-        :param float db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
+        :param int db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
         :param float db_port: The port that you want to access the database through. The DB
                instance will listen on this port for connections. This value
                must be in the range 1115-65535. Default is 5432
@@ -83,14 +83,10 @@ class ClusterArgs:
         pulumi.set(__self__, "private_subnet_id1", private_subnet_id1)
         pulumi.set(__self__, "private_subnet_id2", private_subnet_id2)
         pulumi.set(__self__, "vpc_id", vpc_id)
-        if db_auto_minor_version_upgrade is None:
-            db_auto_minor_version_upgrade = False
         if db_auto_minor_version_upgrade is not None:
             pulumi.set(__self__, "db_auto_minor_version_upgrade", db_auto_minor_version_upgrade)
         if db_backup_retention_period is not None:
             pulumi.set(__self__, "db_backup_retention_period", db_backup_retention_period)
-        if db_encrypted_enabled is None:
-            db_encrypted_enabled = True
         if db_encrypted_enabled is not None:
             pulumi.set(__self__, "db_encrypted_enabled", db_encrypted_enabled)
         if db_num_db_cluster_instances is not None:
@@ -99,8 +95,6 @@ class ClusterArgs:
             pulumi.set(__self__, "db_port", db_port)
         if db_security_group_id is not None:
             pulumi.set(__self__, "db_security_group_id", db_security_group_id)
-        if enable_event_subscription is None:
-            enable_event_subscription = True
         if enable_event_subscription is not None:
             pulumi.set(__self__, "enable_event_subscription", enable_event_subscription)
         if sns_notification_email is not None:
@@ -146,7 +140,7 @@ class ClusterArgs:
 
     @property
     @pulumi.getter(name="dbMasterPassword")
-    def db_master_password(self) -> str:
+    def db_master_password(self) -> pulumi.Input[str]:
         """
         The password for the database administrator account (8-64
         character string)
@@ -154,7 +148,7 @@ class ClusterArgs:
         return pulumi.get(self, "db_master_password")
 
     @db_master_password.setter
-    def db_master_password(self, value: str):
+    def db_master_password(self, value: pulumi.Input[str]):
         pulumi.set(self, "db_master_password", value)
 
     @property
@@ -264,7 +258,7 @@ class ClusterArgs:
 
     @property
     @pulumi.getter(name="dbEncryptedEnabled")
-    def db_encrypted_enabled(self) -> Optional[pulumi.Input[bool]]:
+    def db_encrypted_enabled(self) -> Optional[bool]:
         """
         The number of days to retain automatic database snapshots.
         To disable automatic backups, set this parameter to 0.
@@ -272,19 +266,19 @@ class ClusterArgs:
         return pulumi.get(self, "db_encrypted_enabled")
 
     @db_encrypted_enabled.setter
-    def db_encrypted_enabled(self, value: Optional[pulumi.Input[bool]]):
+    def db_encrypted_enabled(self, value: Optional[bool]):
         pulumi.set(self, "db_encrypted_enabled", value)
 
     @property
     @pulumi.getter(name="dbNumDbClusterInstances")
-    def db_num_db_cluster_instances(self) -> Optional[float]:
+    def db_num_db_cluster_instances(self) -> Optional[int]:
         """
         The number of db instances to launch as part of the cluster. Defaults to 1.
         """
         return pulumi.get(self, "db_num_db_cluster_instances")
 
     @db_num_db_cluster_instances.setter
-    def db_num_db_cluster_instances(self, value: Optional[float]):
+    def db_num_db_cluster_instances(self, value: Optional[int]):
         pulumi.set(self, "db_num_db_cluster_instances", value)
 
     @property
@@ -352,13 +346,13 @@ class Cluster(pulumi.ComponentResource):
                  availability_zone_names: Optional[Sequence[pulumi.Input[str]]] = None,
                  db_auto_minor_version_upgrade: Optional[bool] = None,
                  db_backup_retention_period: Optional[int] = None,
-                 db_encrypted_enabled: Optional[pulumi.Input[bool]] = None,
+                 db_encrypted_enabled: Optional[bool] = None,
                  db_engine_version: Optional[str] = None,
                  db_instance_class: Optional[str] = None,
-                 db_master_password: Optional[str] = None,
+                 db_master_password: Optional[pulumi.Input[str]] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
-                 db_num_db_cluster_instances: Optional[float] = None,
+                 db_num_db_cluster_instances: Optional[int] = None,
                  db_parameter_group_family: Optional[str] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
@@ -378,20 +372,20 @@ class Cluster(pulumi.ComponentResource):
                automatically when upgrades become available.
         :param int db_backup_retention_period: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0. Default is 35 days
-        :param pulumi.Input[bool] db_encrypted_enabled: The number of days to retain automatic database snapshots.
+        :param bool db_encrypted_enabled: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0.
         :param str db_engine_version: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0.
         :param str db_instance_class: The DB (compute and memory capacity) class for the database
                instances.
-        :param str db_master_password: The password for the database administrator account (8-64
+        :param pulumi.Input[str] db_master_password: The password for the database administrator account (8-64
                character string)
         :param str db_master_username: The user name for the database administrator account. This is
                an alphanumeric string of 1-16 characters. The user name
                must start with an uppercase or lowercase letter (A-Z, a-z).
         :param str db_name: The name of the Aurora DB to provision. This is an
                alphanumeric string of 5-64 characters.
-        :param float db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
+        :param int db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
         :param str db_parameter_group_family: The family of the DB parameter group (e.g. aurora-postgresql11).
         :param float db_port: The port that you want to access the database through. The DB
                instance will listen on this port for connections. This value
@@ -438,13 +432,13 @@ class Cluster(pulumi.ComponentResource):
                  availability_zone_names: Optional[Sequence[pulumi.Input[str]]] = None,
                  db_auto_minor_version_upgrade: Optional[bool] = None,
                  db_backup_retention_period: Optional[int] = None,
-                 db_encrypted_enabled: Optional[pulumi.Input[bool]] = None,
+                 db_encrypted_enabled: Optional[bool] = None,
                  db_engine_version: Optional[str] = None,
                  db_instance_class: Optional[str] = None,
-                 db_master_password: Optional[str] = None,
+                 db_master_password: Optional[pulumi.Input[str]] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
-                 db_num_db_cluster_instances: Optional[float] = None,
+                 db_num_db_cluster_instances: Optional[int] = None,
                  db_parameter_group_family: Optional[str] = None,
                  db_port: Optional[float] = None,
                  db_security_group_id: Optional[pulumi.Input[str]] = None,
@@ -470,12 +464,8 @@ class Cluster(pulumi.ComponentResource):
             if availability_zone_names is None and not opts.urn:
                 raise TypeError("Missing required property 'availability_zone_names'")
             __props__.__dict__["availability_zone_names"] = availability_zone_names
-            if db_auto_minor_version_upgrade is None:
-                db_auto_minor_version_upgrade = False
             __props__.__dict__["db_auto_minor_version_upgrade"] = db_auto_minor_version_upgrade
             __props__.__dict__["db_backup_retention_period"] = db_backup_retention_period
-            if db_encrypted_enabled is None:
-                db_encrypted_enabled = True
             __props__.__dict__["db_encrypted_enabled"] = db_encrypted_enabled
             if db_engine_version is None and not opts.urn:
                 raise TypeError("Missing required property 'db_engine_version'")
@@ -498,8 +488,6 @@ class Cluster(pulumi.ComponentResource):
             __props__.__dict__["db_parameter_group_family"] = db_parameter_group_family
             __props__.__dict__["db_port"] = db_port
             __props__.__dict__["db_security_group_id"] = db_security_group_id
-            if enable_event_subscription is None:
-                enable_event_subscription = True
             __props__.__dict__["enable_event_subscription"] = enable_event_subscription
             if private_subnet_id1 is None and not opts.urn:
                 raise TypeError("Missing required property 'private_subnet_id1'")

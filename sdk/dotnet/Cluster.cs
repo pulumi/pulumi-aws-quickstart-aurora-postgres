@@ -71,7 +71,7 @@ namespace Pulumi.AwsQuickStartAuroraPostgres
         /// To disable automatic backups, set this parameter to 0.
         /// </summary>
         [Input("dbEncryptedEnabled")]
-        public Input<bool>? DbEncryptedEnabled { get; set; }
+        public bool? DbEncryptedEnabled { get; set; }
 
         /// <summary>
         /// The number of days to retain automatic database snapshots.
@@ -88,19 +88,19 @@ namespace Pulumi.AwsQuickStartAuroraPostgres
         public string DbInstanceClass { get; set; } = null!;
 
         [Input("dbMasterPassword", required: true)]
-        private string? _dbMasterPassword;
+        private Input<string>? _dbMasterPassword;
 
         /// <summary>
         /// The password for the database administrator account (8-64
         /// character string)
         /// </summary>
-        public string? DbMasterPassword
+        public Input<string>? DbMasterPassword
         {
             get => _dbMasterPassword;
             set
             {
                 var emptySecret = Output.CreateSecret(0);
-                _dbMasterPassword = Output.Tuple<string?, int>(value, emptySecret).Apply(t => t.Item1);
+                _dbMasterPassword = Output.Tuple<Input<string>?, int>(value, emptySecret).Apply(t => t.Item1);
             }
         }
 
@@ -123,7 +123,7 @@ namespace Pulumi.AwsQuickStartAuroraPostgres
         /// The number of db instances to launch as part of the cluster. Defaults to 1.
         /// </summary>
         [Input("dbNumDbClusterInstances")]
-        public double? DbNumDbClusterInstances { get; set; }
+        public int? DbNumDbClusterInstances { get; set; }
 
         /// <summary>
         /// The family of the DB parameter group (e.g. aurora-postgresql11).
@@ -186,9 +186,6 @@ namespace Pulumi.AwsQuickStartAuroraPostgres
 
         public ClusterArgs()
         {
-            DbAutoMinorVersionUpgrade = false;
-            DbEncryptedEnabled = true;
-            EnableEventSubscription = true;
         }
     }
 }

@@ -62,9 +62,9 @@ export class Cluster extends pulumi.ComponentResource {
                 throw new Error("Missing required property 'vpcID'");
             }
             inputs["availabilityZoneNames"] = args ? args.availabilityZoneNames : undefined;
-            inputs["dbAutoMinorVersionUpgrade"] = (args ? args.dbAutoMinorVersionUpgrade : undefined) ?? false;
+            inputs["dbAutoMinorVersionUpgrade"] = args ? args.dbAutoMinorVersionUpgrade : undefined;
             inputs["dbBackupRetentionPeriod"] = args ? args.dbBackupRetentionPeriod : undefined;
-            inputs["dbEncryptedEnabled"] = (args ? args.dbEncryptedEnabled : undefined) ?? true;
+            inputs["dbEncryptedEnabled"] = args ? args.dbEncryptedEnabled : undefined;
             inputs["dbEngineVersion"] = args ? args.dbEngineVersion : undefined;
             inputs["dbInstanceClass"] = args ? args.dbInstanceClass : undefined;
             inputs["dbMasterPassword"] = args?.dbMasterPassword ? pulumi.secret(args.dbMasterPassword) : undefined;
@@ -74,7 +74,7 @@ export class Cluster extends pulumi.ComponentResource {
             inputs["dbParameterGroupFamily"] = args ? args.dbParameterGroupFamily : undefined;
             inputs["dbPort"] = args ? args.dbPort : undefined;
             inputs["dbSecurityGroupID"] = args ? args.dbSecurityGroupID : undefined;
-            inputs["enableEventSubscription"] = (args ? args.enableEventSubscription : undefined) ?? true;
+            inputs["enableEventSubscription"] = args ? args.enableEventSubscription : undefined;
             inputs["privateSubnetID1"] = args ? args.privateSubnetID1 : undefined;
             inputs["privateSubnetID2"] = args ? args.privateSubnetID2 : undefined;
             inputs["snsNotificationEmail"] = args ? args.snsNotificationEmail : undefined;
@@ -111,7 +111,7 @@ export interface ClusterArgs {
      * The number of days to retain automatic database snapshots.
      * To disable automatic backups, set this parameter to 0.
      */
-    dbEncryptedEnabled?: pulumi.Input<boolean>;
+    dbEncryptedEnabled?: boolean;
     /**
      * The number of days to retain automatic database snapshots.
      * To disable automatic backups, set this parameter to 0.
@@ -126,7 +126,7 @@ export interface ClusterArgs {
      * The password for the database administrator account (8-64
      * character string)
      */
-    dbMasterPassword: string;
+    dbMasterPassword: pulumi.Input<string>;
     /**
      * The user name for the database administrator account. This is
      * an alphanumeric string of 1-16 characters. The user name

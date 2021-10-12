@@ -50,7 +50,7 @@ resources:
                     To disable automatic backups, set this parameter to 0.
             dbEncryptedEnabled:
                 type: boolean
-                default: true
+                plain: true
                 description: |
                     The number of days to retain automatic database snapshots.
                     To disable automatic backups, set this parameter to 0.
@@ -76,7 +76,6 @@ resources:
                     must start with an uppercase or lowercase letter (A-Z, a-z).
             dbMasterPassword:
                 type: string
-                plain: true
                 secret: true
                 description: |
                     The password for the database administrator account (8-64
@@ -84,7 +83,6 @@ resources:
             dbAutoMinorVersionUpgrade:
                 type: boolean
                 plain: true
-                default: false
                 description: |
                     Set this parameter to true if you want to enable your DB
                     instances to receive minor DB engine version upgrades
@@ -98,7 +96,6 @@ resources:
             enableEventSubscription:
                 type: boolean
                 plain: true
-                default: true
                 description: |
                     Set this parameter to `false` if you want to disable Amazon
                     Aurora Cluster and Instance level event subscriptions. You
@@ -112,7 +109,7 @@ resources:
                     CloudWatch alarms and Amazon RDS event notifications. This
                     must be a valid email address. Required if enableEventSubscription is true.
             dbNumDbClusterInstances:
-                type: number
+                type: integer
                 plain: true
                 description: |
                     The number of db instances to launch as part of the cluster. Defaults to 1.
