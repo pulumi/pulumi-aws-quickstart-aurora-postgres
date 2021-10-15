@@ -21,7 +21,7 @@ import (
 	"github.com/pulumi/pulumi-aws-quickstart-aurora-postgres/provider/pkg/version"
 )
 
-var providerName = "aws-quickstart-postgres"
+var providerName = "aws-quickstart-aurora-postgres"
 
 func main() {
 	provider.Serve(providerName, version.Version, pulumiSchema)

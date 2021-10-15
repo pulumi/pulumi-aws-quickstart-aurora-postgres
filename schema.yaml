@@ -46,14 +46,13 @@ resources:
                 type: string
                 plain: true
                 description: |
-                    The number of days to retain automatic database snapshots.
-                    To disable automatic backups, set this parameter to 0.
+                    The version of the database engine.
             dbEncryptedEnabled:
                 type: boolean
                 plain: true
                 description: |
-                    The number of days to retain automatic database snapshots.
-                    To disable automatic backups, set this parameter to 0.
+                    Set this parameter to false if you don’t want to encrypt the
+                    database at rest. Defaults to `true`.
             dbPort:
                 type: number
                 plain: true
