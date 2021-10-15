@@ -26,17 +26,17 @@ import (
 )
 
 type ClusterArgs struct {
-	DatabaseName              string `pulumi:"dbName"`
-	DBAutoMinorVersionUpgrade *bool  `pulumi:"dbAutoMinorVersionUpgrade"`
-	DbBackupRetentionPeriod   int32  `pulumi:"dbBackupRetentionPeriod"`
-	DbEngineVersion           string `pulumi:"dbEngineVersion"`
-	DBInstanceClass           string `pulumi:"dbInstanceClass"`
-	DBMasterUsername          string `pulumi:"dbMasterUsername"`
-	DBMasterPassword          string `pulumi:"dbMasterPassword"`
-	DbPort                    int    `pulumi:"dbPort"`
-	DbEncryptionEnabled       *bool  `pulumi:"dbEncryptedEnabled"`
-	DbParameterGroupFamily    string `pulumi:"dbParameterGroupFamily"`
-	NumDbClusterInstances     int    `pulumi:"numNumDbClusterInstances"`
+	DatabaseName              string             `pulumi:"dbName"`
+	DBAutoMinorVersionUpgrade *bool              `pulumi:"dbAutoMinorVersionUpgrade"`
+	DbBackupRetentionPeriod   int32              `pulumi:"dbBackupRetentionPeriod"`
+	DbEngineVersion           string             `pulumi:"dbEngineVersion"`
+	DBInstanceClass           string             `pulumi:"dbInstanceClass"`
+	DBMasterUsername          string             `pulumi:"dbMasterUsername"`
+	DBMasterPassword          pulumi.StringInput `pulumi:"dbMasterPassword"`
+	DbPort                    int                `pulumi:"dbPort"`
+	DbEncryptionEnabled       *bool              `pulumi:"dbEncryptedEnabled"`
+	DbParameterGroupFamily    string             `pulumi:"dbParameterGroupFamily"`
+	NumDbClusterInstances     int                `pulumi:"numNumDbClusterInstances"`
 
 	EnableEventSubscription *bool  `pulumi:"enableEventSubscription"`
 	SnsNotificationEmail    string `pulumi:"snsNotificationEmail"`
@@ -106,7 +106,7 @@ func NewCluster(ctx *pulumi.Context,
 			Tags: pulumi.StringMap{
 				"Name": pulumi.String("database-kms-key"),
 			},
-		})
+		}, pulumi.Parent(component))
 		if kmsKeyErr != nil {
 			return nil, kmsKeyErr
 		}
@@ -114,7 +114,7 @@ func NewCluster(ctx *pulumi.Context,
 		_, kmsKeyAliasErr := kms.NewAlias(ctx, fmt.Sprintf("%s-database-kms-key-alias", name), &kms.AliasArgs{
 			Name:        pulumi.String(fmt.Sprintf("alias/%s", name)),
 			TargetKeyId: kmsKey.ID(),
-		})
+		}, pulumi.Parent(component))
 		if kmsKeyAliasErr != nil {
 			return nil, kmsKeyAliasErr
 		}
@@ -128,7 +128,7 @@ func NewCluster(ctx *pulumi.Context,
 			args.PrivateSubnetID1,
 			args.PrivateSubnetID2,
 		},
-	})
+	}, pulumi.Parent(component))
 	if subnetGroupErr != nil {
 		return nil, subnetGroupErr
 	}
@@ -146,7 +146,7 @@ func NewCluster(ctx *pulumi.Context,
 				Value: pulumi.String("102400"),
 			},
 		},
-	})
+	}, pulumi.Parent(component))
 	if dbParamGroupErr != nil {
 		return nil, dbParamGroupErr
 	}
@@ -155,11 +155,12 @@ func NewCluster(ctx *pulumi.Context,
 		Family: pulumi.String(args.DbParameterGroupFamily),
 		Parameters: rds.ClusterParameterGroupParameterArray{
 			rds.ClusterParameterGroupParameterArgs{
-				Name:  pulumi.String("rds.force_ssl"),
-				Value: pulumi.String("1"),
+				ApplyMethod: pulumi.String("pending-reboot"),
+				Name:        pulumi.String("rds.force_ssl"),
+				Value:       pulumi.String("1"),
 			},
 		},
-	})
+	}, pulumi.Parent(component))
 	if parameterGroupErr != nil {
 		return nil, parameterGroupErr
 	}
@@ -188,7 +189,7 @@ func NewCluster(ctx *pulumi.Context,
 		Engine:                      pulumi.String("aurora-postgresql"),
 		EngineVersion:               pulumi.String(args.DbEngineVersion),
 		MasterUsername:              pulumi.String(args.DBMasterUsername),
-		MasterPassword:              pulumi.String(args.DBMasterPassword),
+		MasterPassword:              args.DBMasterPassword,
 		Port:                        pulumi.Int(port),
 		StorageEncrypted:            pulumi.Bool(dbEncryptionEnabled),
 		DbSubnetGroupName:           subnetGroup.Name,
@@ -201,7 +202,8 @@ func NewCluster(ctx *pulumi.Context,
 			args.DbSecurityGroupID,
 		}
 	}
-	dbCluster, clusterErr := rds.NewCluster(ctx, fmt.Sprintf("%s-postgresql-cluster", name), &clusterArgs)
+	dbCluster, clusterErr := rds.NewCluster(ctx, fmt.Sprintf("%s-postgresql-cluster", name),
+		&clusterArgs, pulumi.Parent(component))
 	if clusterErr != nil {
 		return nil, clusterErr
 	}
@@ -212,10 +214,10 @@ func NewCluster(ctx *pulumi.Context,
 	}
 
 	var topic *sns.Topic
-	if args.EnableEventSubscription != nil && *args.EnableEventSubscription {
+	if enableEventSubscription {
 		snsTopic, snsTopicErr := sns.NewTopic(ctx, "sns-topic", &sns.TopicArgs{
 			DisplayName: pulumi.String(args.DatabaseName),
-		})
+		}, pulumi.Parent(component))
 		if snsTopicErr != nil {
 			return nil, snsTopicErr
 		}
@@ -224,7 +226,7 @@ func NewCluster(ctx *pulumi.Context,
 			Topic:    snsTopic.ID(),
 			Endpoint: pulumi.String(args.SnsNotificationEmail),
 			Protocol: pulumi.String("email"),
-		})
+		}, pulumi.Parent(component))
 		if snsTopicSubscriptionErr != nil {
 			return nil, snsTopicSubscriptionErr
 		}
@@ -247,7 +249,7 @@ func NewCluster(ctx *pulumi.Context,
 			EngineVersion:           pulumi.String(args.DbEngineVersion),
 			PubliclyAccessible:      pulumi.Bool(false),
 			DbSubnetGroupName:       subnetGroup.Name,
-		})
+		}, pulumi.Parent(dbCluster))
 		if dbInstanceErr != nil {
 			return nil, dbInstanceErr
 		}
@@ -269,7 +271,7 @@ func NewCluster(ctx *pulumi.Context,
 				Period:             pulumi.Int(60),
 				EvaluationPeriods:  pulumi.Int(5),
 				TreatMissingData:   pulumi.String("notBreaching"),
-			})
+			}, pulumi.Parent(dbInstance))
 			if cpuUtilization1AlarmErr != nil {
 				return nil, cpuUtilization1AlarmErr
 			}
@@ -290,7 +292,7 @@ func NewCluster(ctx *pulumi.Context,
 				Period:             pulumi.Int(60),
 				EvaluationPeriods:  pulumi.Int(5),
 				TreatMissingData:   pulumi.String("notBreaching"),
-			})
+			}, pulumi.Parent(dbInstance))
 			if maxUsedTxIDsAlarm1Err != nil {
 				return nil, maxUsedTxIDsAlarm1Err
 			}
@@ -311,7 +313,7 @@ func NewCluster(ctx *pulumi.Context,
 				Period:             pulumi.Int(60),
 				EvaluationPeriods:  pulumi.Int(5),
 				TreatMissingData:   pulumi.String("notBreaching"),
-			})
+			}, pulumi.Parent(dbInstance))
 			if freeLocalStorageAlarm1Err != nil {
 				return nil, freeLocalStorageAlarm1Err
 			}
@@ -323,7 +325,7 @@ func NewCluster(ctx *pulumi.Context,
 				SourceIds: pulumi.StringArray{
 					dbCluster.ID(),
 				},
-			})
+			}, pulumi.Parent(dbInstance))
 			if clusterEventSubscriptionErr != nil {
 				return nil, clusterEventSubscriptionErr
 			}
@@ -335,7 +337,7 @@ func NewCluster(ctx *pulumi.Context,
 				SourceIds: pulumi.StringArray{
 					dbInstance.ID(),
 				},
-			})
+			}, pulumi.Parent(dbInstance))
 			if instanceEventSubscriptionErr != nil {
 				return nil, instanceEventSubscriptionErr
 			}
@@ -347,7 +349,7 @@ func NewCluster(ctx *pulumi.Context,
 				SourceIds: pulumi.StringArray{
 					dbParameterGroup.ID(),
 				},
-			})
+			}, pulumi.Parent(dbInstance))
 			if dbParameterGroupEventSubscriptionErr != nil {
 				return nil, dbParameterGroupEventSubscriptionErr
 			}

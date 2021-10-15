@@ -55,11 +55,10 @@ type clusterArgs struct {
 	// The number of days to retain automatic database snapshots.
 	// To disable automatic backups, set this parameter to 0. Default is 35 days
 	DbBackupRetentionPeriod *int `pulumi:"dbBackupRetentionPeriod"`
-	// The number of days to retain automatic database snapshots.
-	// To disable automatic backups, set this parameter to 0.
+	// Set this parameter to false if you don’t want to encrypt the
+	// database at rest. Defaults to `true`.
 	DbEncryptedEnabled *bool `pulumi:"dbEncryptedEnabled"`
-	// The number of days to retain automatic database snapshots.
-	// To disable automatic backups, set this parameter to 0.
+	// The version of the database engine.
 	DbEngineVersion string `pulumi:"dbEngineVersion"`
 	// The DB (compute and memory capacity) class for the database
 	// instances.
@@ -116,11 +115,10 @@ type ClusterArgs struct {
 	// The number of days to retain automatic database snapshots.
 	// To disable automatic backups, set this parameter to 0. Default is 35 days
 	DbBackupRetentionPeriod *int
-	// The number of days to retain automatic database snapshots.
-	// To disable automatic backups, set this parameter to 0.
+	// Set this parameter to false if you don’t want to encrypt the
+	// database at rest. Defaults to `true`.
 	DbEncryptedEnabled *bool
-	// The number of days to retain automatic database snapshots.
-	// To disable automatic backups, set this parameter to 0.
+	// The version of the database engine.
 	DbEngineVersion string
 	// The DB (compute and memory capacity) class for the database
 	// instances.

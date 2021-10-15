@@ -34,8 +34,7 @@ class ClusterArgs:
         """
         The set of arguments for constructing a Cluster resource.
         :param Sequence[pulumi.Input[str]] availability_zone_names: List of Availability Zone names to use to create the DB Cluster.
-        :param str db_engine_version: The number of days to retain automatic database snapshots.
-               To disable automatic backups, set this parameter to 0.
+        :param str db_engine_version: The version of the database engine.
         :param str db_instance_class: The DB (compute and memory capacity) class for the database
                instances.
         :param pulumi.Input[str] db_master_password: The password for the database administrator account (8-64
@@ -57,8 +56,8 @@ class ClusterArgs:
                automatically when upgrades become available.
         :param int db_backup_retention_period: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0. Default is 35 days
-        :param bool db_encrypted_enabled: The number of days to retain automatic database snapshots.
-               To disable automatic backups, set this parameter to 0.
+        :param bool db_encrypted_enabled: Set this parameter to false if you don’t want to encrypt the
+               database at rest. Defaults to `true`.
         :param int db_num_db_cluster_instances: The number of db instances to launch as part of the cluster. Defaults to 1.
         :param float db_port: The port that you want to access the database through. The DB
                instance will listen on this port for connections. This value
@@ -116,8 +115,7 @@ class ClusterArgs:
     @pulumi.getter(name="dbEngineVersion")
     def db_engine_version(self) -> str:
         """
-        The number of days to retain automatic database snapshots.
-        To disable automatic backups, set this parameter to 0.
+        The version of the database engine.
         """
         return pulumi.get(self, "db_engine_version")
 
@@ -260,8 +258,8 @@ class ClusterArgs:
     @pulumi.getter(name="dbEncryptedEnabled")
     def db_encrypted_enabled(self) -> Optional[bool]:
         """
-        The number of days to retain automatic database snapshots.
-        To disable automatic backups, set this parameter to 0.
+        Set this parameter to false if you don’t want to encrypt the
+        database at rest. Defaults to `true`.
         """
         return pulumi.get(self, "db_encrypted_enabled")
 
@@ -372,10 +370,9 @@ class Cluster(pulumi.ComponentResource):
                automatically when upgrades become available.
         :param int db_backup_retention_period: The number of days to retain automatic database snapshots.
                To disable automatic backups, set this parameter to 0. Default is 35 days
-        :param bool db_encrypted_enabled: The number of days to retain automatic database snapshots.
-               To disable automatic backups, set this parameter to 0.
-        :param str db_engine_version: The number of days to retain automatic database snapshots.
-               To disable automatic backups, set this parameter to 0.
+        :param bool db_encrypted_enabled: Set this parameter to false if you don’t want to encrypt the
+               database at rest. Defaults to `true`.
+        :param str db_engine_version: The version of the database engine.
         :param str db_instance_class: The DB (compute and memory capacity) class for the database
                instances.
         :param pulumi.Input[str] db_master_password: The password for the database administrator account (8-64

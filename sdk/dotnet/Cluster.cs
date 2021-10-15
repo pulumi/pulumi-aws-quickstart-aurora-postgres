@@ -67,15 +67,14 @@ namespace Pulumi.AwsQuickStartAuroraPostgres
         public int? DbBackupRetentionPeriod { get; set; }
 
         /// <summary>
-        /// The number of days to retain automatic database snapshots.
-        /// To disable automatic backups, set this parameter to 0.
+        /// Set this parameter to false if you don’t want to encrypt the
+        /// database at rest. Defaults to `true`.
         /// </summary>
         [Input("dbEncryptedEnabled")]
         public bool? DbEncryptedEnabled { get; set; }
 
         /// <summary>
-        /// The number of days to retain automatic database snapshots.
-        /// To disable automatic backups, set this parameter to 0.
+        /// The version of the database engine.
         /// </summary>
         [Input("dbEngineVersion", required: true)]
         public string DbEngineVersion { get; set; } = null!;

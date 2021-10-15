@@ -108,13 +108,12 @@ export interface ClusterArgs {
      */
     dbBackupRetentionPeriod?: number;
     /**
-     * The number of days to retain automatic database snapshots.
-     * To disable automatic backups, set this parameter to 0.
+     * Set this parameter to false if you don’t want to encrypt the
+     * database at rest. Defaults to `true`.
      */
     dbEncryptedEnabled?: boolean;
     /**
-     * The number of days to retain automatic database snapshots.
-     * To disable automatic backups, set this parameter to 0.
+     * The version of the database engine.
      */
     dbEngineVersion: string;
     /**
