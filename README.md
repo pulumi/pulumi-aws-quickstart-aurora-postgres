@@ -1,6 +1,6 @@
 # Pulumi AWS Aurora Postgres
 
-Easily create an Aurora Postgres database with accompanying features like alarms, logging, encryption, and multi-AZ redundancy. This component is based on the best practices recommended by AWS in the [Modular architecture for Amazon Aurora PostgreSQL Quickstart](https://aws.amazon.com/quickstart/architecture/aurora-postgresql/)
+Easily deploy an Aurora Postgres database with accompanying features like alarms, logging, encryption, and multi-AZ redundancy. This component is based on the best practices recommended by AWS in the [Modular architecture for Amazon Aurora PostgreSQL Quickstart](https://aws.amazon.com/quickstart/architecture/aurora-postgresql/)
 
 
 # Examples
