@@ -1,0 +1,3 @@
+name: aws-ts-aurora-postgres-example
+runtime: nodejs
+description: A minimal typescript Pulumi program that deploys an Aurora Postgres server
